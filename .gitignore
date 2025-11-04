@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg*
+*.log
+
+# Virtualenv
+.venv/
+env/
+venv/
+
+# Environment files
+.env
+.env.*
+
+# Docker / DB volumes
+dbdata/
+*.db
+
+# Editor / system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
