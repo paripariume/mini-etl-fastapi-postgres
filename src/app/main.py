@@ -1,11 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
-from .db import SessionLocal, engine
-from .models import Base, Order
-
 from datetime import date
-from fastapi import Query
+from .db import SessionLocal, engine
+from .models import Base, Order, ETLMetrics
 
 app = FastAPI(title="Mini ETL + API")
 Base.metadata.create_all(bind=engine)
@@ -20,6 +18,14 @@ def get_db():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/metrics")
+def metrics(db: Session = Depends(get_db)):
+    m = db.get(ETLMetrics, 1)
+    return {
+        "last_load_at": m.last_load_at.isoformat() if (m and m.last_load_at) else None,
+        "last_load_inserted": m.last_load_inserted if m else 0,
+    }
 
 @app.get("/orders/summary")
 def orders_summary(db: Session = Depends(get_db)):
@@ -41,16 +47,18 @@ def orders_daily(
     start: date | None = Query(None),
     end: date | None = Query(None),
 ):
-    q = select(
-        Order.order_date.label("order_date"),
-        func.sum(Order.amount).label("amount_sum"),
-        func.count().label("count"),
-    ).group_by(Order.order_date).order_by(Order.order_date)
-
+    q = (
+        select(
+            Order.order_date.label("order_date"),
+            func.sum(Order.amount).label("amount_sum"),
+            func.count().label("count"),
+        )
+        .group_by(Order.order_date)
+        .order_by(Order.order_date)
+    )
     if start:
         q = q.filter(Order.order_date >= start)
     if end:
         q = q.filter(Order.order_date <= end)
-
     rows = db.execute(q).mappings().all()
     return {"daily": [dict(r) for r in rows]}
