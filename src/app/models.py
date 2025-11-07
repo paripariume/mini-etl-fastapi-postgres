@@ -1,5 +1,6 @@
+# src/app/models.py
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
-from sqlalchemy import String, Integer, Date, Numeric, DateTime
+from sqlalchemy import String, Integer, Date, Numeric, DateTime, Text, UniqueConstraint
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -13,9 +14,11 @@ class Order(Base):
     customer: Mapped[str] = mapped_column(String(50), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
 
-# ★ ETL実行状況を保持する単一行テーブル
 class ETLMetrics(Base):
     __tablename__ = "etl_metrics"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)  # 常に1で運用
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)  # 常に1
     last_load_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_load_inserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_load_status: Mapped[str] = mapped_column(String(16), nullable=False, default="OK")  # OK / FAILED
+    last_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    __table_args__ = (UniqueConstraint("id", name="uq_etl_metrics_id"),)

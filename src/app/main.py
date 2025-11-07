@@ -1,3 +1,4 @@
+# src/app/main.py
 from fastapi import FastAPI, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
@@ -25,6 +26,8 @@ def metrics(db: Session = Depends(get_db)):
     return {
         "last_load_at": m.last_load_at.isoformat() if (m and m.last_load_at) else None,
         "last_load_inserted": m.last_load_inserted if m else 0,
+        "last_load_status": m.last_load_status if m else "UNKNOWN",
+        "last_error_message": m.last_error_message if m else None,
     }
 
 @app.get("/orders/summary")
@@ -41,6 +44,7 @@ def orders_summary(db: Session = Depends(get_db)):
     rows = db.execute(stmt).mappings().all()
     return {"summary": [dict(r) for r in rows]}
 
+# ★ testが叩いてくる /orders/daily を必ず登録する
 @app.get("/orders/daily")
 def orders_daily(
     db: Session = Depends(get_db),
